@@ -184,7 +184,7 @@ The **same head structure** is used for all 3 backbones, so only the backbones d
 | LR scheduler | CosineAnnealingLR (T_max = epochs) |
 | Epochs / batch size | 12 / 32 (fixed) |
 | Model selection | Checkpoint of the epoch with the highest **val macro-F1** |
-| Hardware | ✏️ e.g. Mac mini (Apple M_, MPS) / Colab T4 |
+| Hardware | Mac mini (Apple M4: 10-core CPU, 10-core GPU, 16 GB), PyTorch MPS backend. About 20.0 h of training in total: 13.3 h for the 60 sweep runs and 6.7 h for the 30 final runs |
 
 ### 4.2 Hyperparameter tuning: W&B Sweep (Bayesian)
 
@@ -212,13 +212,181 @@ To compare `frozen` and `last_block` fairly, **one sweep is run per architecture
 > ✅ = strategy selected as the main model (higher mean val macro-F1 over the 5 seeds).
 <!-- /AUTO:cfg -->
 
+**Sweep results** (6 sweeps × 10 runs = 60 runs; best val macro-F1 in %, single seed 42):
+
+| Model | Strategy | W&B sweep | Runs | Best val macro-F1 | Median | Worst | Avg. time / run (min) |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| VGG16 | `frozen` | [`l5l2u9ee`](https://wandb.ai/tetravaal/DADS7202_HW_SportCNN_5/sweeps/l5l2u9ee) | 10 | **93.36** | 93.06 | 92.39 | 17.0 |
+| VGG16 | `last_block` | [`ts2gsyb0`](https://wandb.ai/tetravaal/DADS7202_HW_SportCNN_5/sweeps/ts2gsyb0) | 10 | **94.89** | 94.13 | 93.40 | 19.1 |
+| MobileNetV2 | `frozen` | [`nv0xw6xa`](https://wandb.ai/tetravaal/DADS7202_HW_SportCNN_5/sweeps/nv0xw6xa) | 10 | **94.69** | 94.51 | 91.46 | 7.1 |
+| MobileNetV2 | `last_block` | [`hgzxb3k5`](https://wandb.ai/tetravaal/DADS7202_HW_SportCNN_5/sweeps/hgzxb3k5) | 10 | **96.86** | 96.65 | 95.05 | 7.9 |
+| ResNet50 | `frozen` | [`25htj08f`](https://wandb.ai/tetravaal/DADS7202_HW_SportCNN_5/sweeps/25htj08f) | 10 | **97.88** | 97.61 | 96.27 | 12.9 |
+| ResNet50 | `last_block` | [`g3buomhx`](https://wandb.ai/tetravaal/DADS7202_HW_SportCNN_5/sweeps/g3buomhx) | 10 | **98.13** | 97.83 | 96.94 | 15.6 |
+
+> † The 10th ResNet50 `last_block` run (`rgjkw9gx`) finished normally and is in the local `wandb/` folder, but it is missing from the W&B server because two failed final-run attempts later reused its run ID. Its numbers here come from the local folder. Its val macro-F1 (97.44) is below the selected run (98.13), so it does not change the selected config.
+
+**What the sweeps show:**
+- **The learning rate matters most.** For MobileNetV2 and ResNet50, val macro-F1 rises with lr (Pearson r between log lr and val F1 = 0.82–0.95 across the 4 sweeps), and the best runs sit near the top of the range. For VGG16 there is no clear trend (r = −0.27 and 0.02).
+- `hidden = 512` gives a higher mean val F1 than 256 in 5 of the 6 sweeps. The effects of `weight_decay` and `dropout` are small (mostly < 0.5 pp) and change direction between sweeps.
+- The Bayesian search samples unevenly, with some values tried only 1–2 times, so these trends are indicative only.
+
+<details>
+<summary>All sweep runs (sorted by val macro-F1)</summary>
+
+**VGG16 · `frozen`**
+
+| # | Run | lr | weight_decay | hidden | dropout | best val macro-F1 (%) |
+|:-:|---|:-:|:-:|:-:|:-:|:-:|
+| 1 | vgg16-frozen-sweep-2 | 1.28e-04 | 0.0001 | 512 | 0.5 | **93.36** |
+| 2 | vgg16-frozen-sweep-4 | 1.48e-04 | 0.0001 | 512 | 0.5 | 93.28 |
+| 3 | vgg16-frozen-sweep-5 | 1.02e-04 | 0.0001 | 512 | 0.5 | 93.28 |
+| 4 | vgg16-frozen-sweep-7 | 1.41e-04 | 0.0001 | 512 | 0.5 | 93.25 |
+| 5 | vgg16-frozen-sweep-3 | 1.59e-04 | 0.0001 | 256 | 0.5 | 93.09 |
+| 6 | vgg16-frozen-sweep-6 | 1.68e-04 | 0.01 | 512 | 0.5 | 93.03 |
+| 7 | vgg16-frozen-sweep-9 | 1.17e-03 | 0.0001 | 512 | 0.3 | 93.00 |
+| 8 | vgg16-frozen-sweep-10 | 1.27e-03 | 0.01 | 512 | 0.3 | 92.73 |
+| 9 | vgg16-frozen-sweep-8 | 2.45e-04 | 0.01 | 512 | 0.5 | 92.48 |
+| 10 | vgg16-frozen-sweep-1 | 1.11e-04 | 0.0001 | 256 | 0.3 | 92.39 |
+
+**VGG16 · `last_block`**
+
+| # | Run | lr | weight_decay | hidden | dropout | best val macro-F1 (%) |
+|:-:|---|:-:|:-:|:-:|:-:|:-:|
+| 1 | vgg16-last_block-sweep-1 | 1.50e-03 | 0.0001 | 512 | 0.3 | **94.89** |
+| 2 | vgg16-last_block-sweep-9 | 3.31e-04 | 0.01 | 512 | 0.5 | 94.62 |
+| 3 | vgg16-last_block-sweep-8 | 6.57e-04 | 0.01 | 512 | 0.3 | 94.56 |
+| 4 | vgg16-last_block-sweep-10 | 2.20e-04 | 0.01 | 512 | 0.5 | 94.38 |
+| 5 | vgg16-last_block-sweep-5 | 2.06e-04 | 0.0001 | 256 | 0.3 | 94.18 |
+| 6 | vgg16-last_block-sweep-4 | 1.85e-03 | 0.0001 | 512 | 0.5 | 94.08 |
+| 7 | vgg16-last_block-sweep-6 | 1.87e-04 | 0.0001 | 512 | 0.3 | 93.96 |
+| 8 | vgg16-last_block-sweep-2 | 1.96e-04 | 0.01 | 256 | 0.3 | 93.93 |
+| 9 | vgg16-last_block-sweep-3 | 2.18e-04 | 0.0001 | 512 | 0.3 | 93.93 |
+| 10 | vgg16-last_block-sweep-7 | 1.80e-03 | 0.0001 | 512 | 0.3 | 93.40 |
+
+**MobileNetV2 · `frozen`**
+
+| # | Run | lr | weight_decay | hidden | dropout | best val macro-F1 (%) |
+|:-:|---|:-:|:-:|:-:|:-:|:-:|
+| 1 | mobilenet_v2-frozen-sweep-2 | 1.52e-03 | 0.01 | 512 | 0.3 | **94.69** |
+| 2 | mobilenet_v2-frozen-sweep-8 | 1.43e-03 | 0.01 | 512 | 0.3 | 94.60 |
+| 3 | mobilenet_v2-frozen-sweep-7 | 1.60e-03 | 0.01 | 512 | 0.3 | 94.59 |
+| 4 | mobilenet_v2-frozen-sweep-6 | 1.25e-03 | 0.01 | 512 | 0.3 | 94.59 |
+| 5 | mobilenet_v2-frozen-sweep-10 | 1.13e-03 | 0.01 | 512 | 0.5 | 94.52 |
+| 6 | mobilenet_v2-frozen-sweep-4 | 1.62e-03 | 0.0001 | 512 | 0.3 | 94.50 |
+| 7 | mobilenet_v2-frozen-sweep-9 | 1.10e-03 | 0.01 | 512 | 0.5 | 94.40 |
+| 8 | mobilenet_v2-frozen-sweep-5 | 1.81e-03 | 0.01 | 512 | 0.3 | 94.32 |
+| 9 | mobilenet_v2-frozen-sweep-1 | 2.16e-04 | 0.0001 | 256 | 0.3 | 93.31 |
+| 10 | mobilenet_v2-frozen-sweep-3 | 1.01e-04 | 0.01 | 256 | 0.5 | 91.46 |
+
+**MobileNetV2 · `last_block`**
+
+| # | Run | lr | weight_decay | hidden | dropout | best val macro-F1 (%) |
+|:-:|---|:-:|:-:|:-:|:-:|:-:|
+| 1 | mobilenet_v2-last_block-sweep-4 | 1.70e-03 | 0.0001 | 256 | 0.5 | **96.86** |
+| 2 | mobilenet_v2-last_block-sweep-2 | 1.75e-03 | 0.01 | 256 | 0.3 | 96.85 |
+| 3 | mobilenet_v2-last_block-sweep-7 | 1.65e-03 | 0.0001 | 512 | 0.5 | 96.84 |
+| 4 | mobilenet_v2-last_block-sweep-1 | 9.34e-04 | 0.0001 | 512 | 0.3 | 96.75 |
+| 5 | mobilenet_v2-last_block-sweep-8 | 1.79e-03 | 0.01 | 256 | 0.3 | 96.65 |
+| 6 | mobilenet_v2-last_block-sweep-9 | 8.88e-04 | 0.0001 | 512 | 0.3 | 96.65 |
+| 7 | mobilenet_v2-last_block-sweep-5 | 1.56e-03 | 0.0001 | 512 | 0.3 | 96.46 |
+| 8 | mobilenet_v2-last_block-sweep-3 | 6.59e-04 | 0.0001 | 512 | 0.5 | 95.88 |
+| 9 | mobilenet_v2-last_block-sweep-6 | 3.28e-04 | 0.01 | 256 | 0.3 | 95.38 |
+| 10 | mobilenet_v2-last_block-sweep-10 | 2.09e-04 | 0.0001 | 512 | 0.5 | 95.05 |
+
+**ResNet50 · `frozen`**
+
+| # | Run | lr | weight_decay | hidden | dropout | best val macro-F1 (%) |
+|:-:|---|:-:|:-:|:-:|:-:|:-:|
+| 1 | resnet50-frozen-sweep-4 | 1.05e-03 | 0.01 | 512 | 0.3 | **97.88** |
+| 2 | resnet50-frozen-sweep-9 | 9.85e-04 | 0.01 | 512 | 0.3 | 97.88 |
+| 3 | resnet50-frozen-sweep-10 | 9.26e-04 | 0.01 | 512 | 0.5 | 97.86 |
+| 4 | resnet50-frozen-sweep-7 | 1.47e-03 | 0.01 | 512 | 0.5 | 97.77 |
+| 5 | resnet50-frozen-sweep-8 | 7.94e-04 | 0.01 | 512 | 0.3 | 97.69 |
+| 6 | resnet50-frozen-sweep-6 | 1.57e-03 | 0.01 | 512 | 0.5 | 97.53 |
+| 7 | resnet50-frozen-sweep-2 | 1.68e-03 | 0.0001 | 512 | 0.3 | 97.51 |
+| 8 | resnet50-frozen-sweep-3 | 4.41e-04 | 0.01 | 256 | 0.3 | 97.41 |
+| 9 | resnet50-frozen-sweep-5 | 2.01e-04 | 0.01 | 256 | 0.5 | 96.54 |
+| 10 | resnet50-frozen-sweep-1 | 1.37e-04 | 0.01 | 256 | 0.3 | 96.27 |
+
+**ResNet50 · `last_block`**
+
+| # | Run | lr | weight_decay | hidden | dropout | best val macro-F1 (%) |
+|:-:|---|:-:|:-:|:-:|:-:|:-:|
+| 1 | resnet50-last_block-sweep-4 | 9.84e-04 | 0.0001 | 512 | 0.5 | **98.13** |
+| 2 | resnet50-last_block-sweep-2 | 8.51e-04 | 0.01 | 256 | 0.5 | 98.05 |
+| 3 | resnet50-last_block-sweep-9 | 1.26e-03 | 0.01 | 512 | 0.5 | 98.05 |
+| 4 | resnet50-last_block-sweep-5 | 9.25e-04 | 0.0001 | 512 | 0.5 | 98.03 |
+| 5 | resnet50-last_block-sweep-7 | 1.06e-03 | 0.01 | 512 | 0.5 | 97.87 |
+| 6 | resnet50-last_block-sweep-3 | 6.28e-04 | 0.01 | 512 | 0.5 | 97.79 |
+| 7 | resnet50-last_block-sweep-1 | 5.99e-04 | 0.01 | 256 | 0.3 | 97.76 |
+| 8 | resnet50-last_block-sweep-8 | 1.72e-03 | 0.01 | 512 | 0.5 | 97.68 |
+| 9 | resnet50-last_block-sweep-10 † | 4.09e-04 | 0.01 | 512 | 0.5 | 97.44 |
+| 10 | resnet50-last_block-sweep-6 | 1.52e-04 | 0.01 | 256 | 0.3 | 96.94 |
+
+</details>
+
+Raw data of all 90 runs (config, val/test metrics, run time; column `source` shows whether a row comes from the W&B API or the local `wandb/` folder): [`outputs/wandb_runs.csv`](outputs/wandb_runs.csv).
+
 ### 4.3 Final runs and strategy selection
 
 1. The best configuration of **both strategies** is re-trained from scratch with **5 seeds** (`0–4`).
 2. For each architecture, the strategy with the higher **mean val macro-F1** becomes the main model. The choice is made on validation only, never on test.
 3. Results are reported on the test set as mean ± SD over the 5 seeds.
 
-🔗 W&B project: [wandb.ai/tetravaal/DADS7202_HW_SportCNN_5](https://wandb.ai/tetravaal/DADS7202_HW_SportCNN_5) (6 sweeps + 30 final runs)
+**Final runs:** 3 models × 2 strategies × 5 seeds = 30 runs, all finished. Values are mean ± SD over seeds 0–4. ✅ marks the strategy with the higher mean **val** macro-F1, which becomes the main model.
+
+| Model | Strategy | Runs | Val macro-F1 (%) | Test macro-F1 (%) | Test accuracy (%) | Avg. time / run (min) |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|
+| VGG16 | `frozen` | 5 | 92.81 ± 0.22 | 92.48 ± 0.35 | 92.50 ± 0.36 | 17.3 |
+| VGG16 | `last_block` ✅ | 5 | 94.03 ± 0.25 | 92.76 ± 0.15 | 92.80 ± 0.14 | 19.4 |
+| MobileNetV2 | `frozen` | 5 | 94.73 ± 0.43 | 93.34 ± 0.42 | 93.37 ± 0.43 | 7.1 |
+| MobileNetV2 | `last_block` ✅ | 5 | 96.68 ± 0.31 | 95.34 ± 0.54 | 95.31 ± 0.53 | 7.9 |
+| ResNet50 | `frozen` | 5 | 97.56 ± 0.14 | 96.25 ± 0.15 | 96.20 ± 0.16 | 13.1 |
+| ResNet50 | `last_block` ✅ | 5 | 97.81 ± 0.30 | 96.64 ± 0.19 | 96.61 ± 0.19 | 15.8 |
+
+- `last_block` wins on validation for all 3 models, and the test set agrees in every case.
+- Test macro-F1 is **below val** for every configuration: about 1.2–1.4 pp for most, and 0.3 pp for VGG16 `frozen`. Val was used to pick the hyperparameters, the best epoch and the strategy, so it is optimistically biased, which is why only test scores are reported as results. The ranking of the models is the same on val and test.
+- In 5 of the 6 configs, the best sweep run (seed 42) scores higher than the 5-seed mean of the same config, e.g. 98.13 vs. 97.81 for ResNet50 `last_block`. This "winner's curse" is why the configs are re-trained with fresh seeds instead of reusing the sweep score.
+
+<details>
+<summary>All 30 final runs (per seed)</summary>
+
+| Model | Strategy | Seed | Run | Val macro-F1 (%) | Test macro-F1 (%) | Test accuracy (%) |
+|---|:-:|:-:|---|:-:|:-:|:-:|
+| VGG16 | `frozen` | 0 | strat_frozen-vgg16-s0 | 92.96 | 92.95 | 92.97 |
+| VGG16 | `frozen` | 1 | strat_frozen-vgg16-s1 | 92.48 | 92.10 | 92.10 |
+| VGG16 | `frozen` | 2 | strat_frozen-vgg16-s2 | 92.71 | 92.67 | 92.71 |
+| VGG16 | `frozen` | 3 | strat_frozen-vgg16-s3 | 92.95 | 92.19 | 92.19 |
+| VGG16 | `frozen` | 4 | strat_frozen-vgg16-s4 | 92.97 | 92.51 | 92.53 |
+| VGG16 | `last_block` | 0 | strat_last_block-vgg16-s0 | 94.45 | 92.94 | 92.97 |
+| VGG16 | `last_block` | 1 | strat_last_block-vgg16-s1 | 94.02 | 92.79 | 92.80 |
+| VGG16 | `last_block` | 2 | strat_last_block-vgg16-s2 | 93.92 | 92.57 | 92.62 |
+| VGG16 | `last_block` | 3 | strat_last_block-vgg16-s3 | 93.95 | 92.86 | 92.88 |
+| VGG16 | `last_block` | 4 | strat_last_block-vgg16-s4 | 93.80 | 92.65 | 92.71 |
+| MobileNetV2 | `frozen` | 0 | strat_frozen-mobilenet_v2-s0 | 95.41 | 93.47 | 93.49 |
+| MobileNetV2 | `frozen` | 1 | strat_frozen-mobilenet_v2-s1 | 94.49 | 93.21 | 93.23 |
+| MobileNetV2 | `frozen` | 2 | strat_frozen-mobilenet_v2-s2 | 94.32 | 93.80 | 93.84 |
+| MobileNetV2 | `frozen` | 3 | strat_frozen-mobilenet_v2-s3 | 94.55 | 92.69 | 92.71 |
+| MobileNetV2 | `frozen` | 4 | strat_frozen-mobilenet_v2-s4 | 94.87 | 93.55 | 93.58 |
+| MobileNetV2 | `last_block` | 0 | strat_last_block-mobilenet_v2-s0 | 96.48 | 95.51 | 95.49 |
+| MobileNetV2 | `last_block` | 1 | strat_last_block-mobilenet_v2-s1 | 97.18 | 95.25 | 95.23 |
+| MobileNetV2 | `last_block` | 2 | strat_last_block-mobilenet_v2-s2 | 96.81 | 95.58 | 95.57 |
+| MobileNetV2 | `last_block` | 3 | strat_last_block-mobilenet_v2-s3 | 96.45 | 94.46 | 94.44 |
+| MobileNetV2 | `last_block` | 4 | strat_last_block-mobilenet_v2-s4 | 96.49 | 95.87 | 95.83 |
+| ResNet50 | `frozen` | 0 | strat_frozen-resnet50-s0 | 97.42 | 96.25 | 96.18 |
+| ResNet50 | `frozen` | 1 | strat_frozen-resnet50-s1 | 97.50 | 96.37 | 96.35 |
+| ResNet50 | `frozen` | 2 | strat_frozen-resnet50-s2 | 97.60 | 96.04 | 96.01 |
+| ResNet50 | `frozen` | 3 | strat_frozen-resnet50-s3 | 97.78 | 96.41 | 96.35 |
+| ResNet50 | `frozen` | 4 | strat_frozen-resnet50-s4 | 97.52 | 96.19 | 96.09 |
+| ResNet50 | `last_block` | 0 | strat_last_block-resnet50-s0 | 98.06 | 96.41 | 96.35 |
+| ResNet50 | `last_block` | 1 | strat_last_block-resnet50-s1 | 97.97 | 96.91 | 96.88 |
+| ResNet50 | `last_block` | 2 | strat_last_block-resnet50-s2 | 97.40 | 96.64 | 96.61 |
+| ResNet50 | `last_block` | 3 | strat_last_block-resnet50-s3 | 98.04 | 96.53 | 96.53 |
+| ResNet50 | `last_block` | 4 | strat_last_block-resnet50-s4 | 97.58 | 96.71 | 96.70 |
+
+</details>
+
+🔗 W&B project: [wandb.ai/tetravaal/DADS7202_HW_SportCNN_5](https://wandb.ai/tetravaal/DADS7202_HW_SportCNN_5) (6 sweeps × 10 runs + 30 final runs = 90 runs)
 
 [🔝](#highlight)
 
