@@ -1,0 +1,7 @@
+metric,A,B,mean A (%),mean B (%),diff A-B (pp),t,p-value,sig @0.05,sig @Bonferroni (0.0083)
+Accuracy,vgg16,mobilenet_v2,92.7951,95.3125,-2.5174,-10.253,0.0003,True,True
+Accuracy,vgg16,resnet50,92.7951,96.6146,-3.8194,-35.9258,0.0,True,True
+Accuracy,mobilenet_v2,resnet50,95.3125,96.6146,-1.3021,-5.145,0.0035,True,True
+Macro F1,vgg16,mobilenet_v2,92.7607,95.3359,-2.5752,-10.3598,0.0002,True,True
+Macro F1,vgg16,resnet50,92.7607,96.6395,-3.8788,-36.4473,0.0,True,True
+Macro F1,mobilenet_v2,resnet50,95.3359,96.6395,-1.3036,-5.1436,0.0037,True,True

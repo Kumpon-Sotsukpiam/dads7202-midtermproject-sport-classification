@@ -1,0 +1,5 @@
+path_a,split_a,label_a,path_b,split_b,label_b,hamming
+sport_clean/badminton/00660.jpg,train,badminton,sport_clean/badminton/00679.jpg,val,badminton,1
+sport_clean/swimming/07318.jpg,train,swimming,sport_clean/swimming/07395.jpg,val,swimming,4
+sport_clean/boxing/01805.jpg,train,boxing,sport_clean/boxing/01814.jpg,test,boxing,4
+sport_clean/basketball/00919.jpg,train,basketball,sport_clean/basketball/00881.jpg,val,basketball,1

@@ -1,0 +1,68 @@
+{
+  "vgg16": {
+    "frozen": {
+      "lr": 0.00012781969687838908,
+      "weight_decay": 0.0001,
+      "hidden": 512,
+      "dropout": 0.5,
+      "strategy": "frozen",
+      "arch": "vgg16",
+      "epochs": 12,
+      "batch_size": 32
+    },
+    "last_block": {
+      "lr": 0.0015023901176955158,
+      "weight_decay": 0.0001,
+      "hidden": 512,
+      "dropout": 0.3,
+      "strategy": "last_block",
+      "arch": "vgg16",
+      "epochs": 12,
+      "batch_size": 32
+    }
+  },
+  "mobilenet_v2": {
+    "frozen": {
+      "lr": 0.0015206249601168289,
+      "weight_decay": 0.01,
+      "hidden": 512,
+      "dropout": 0.3,
+      "strategy": "frozen",
+      "arch": "mobilenet_v2",
+      "epochs": 12,
+      "batch_size": 32
+    },
+    "last_block": {
+      "lr": 0.001698462377690013,
+      "weight_decay": 0.0001,
+      "hidden": 256,
+      "dropout": 0.5,
+      "strategy": "last_block",
+      "arch": "mobilenet_v2",
+      "epochs": 12,
+      "batch_size": 32
+    }
+  },
+  "resnet50": {
+    "frozen": {
+      "lr": 0.0010472693040243734,
+      "weight_decay": 0.01,
+      "hidden": 512,
+      "dropout": 0.3,
+      "strategy": "frozen",
+      "arch": "resnet50",
+      "epochs": 12,
+      "batch_size": 32
+    },
+    "last_block": {
+      "lr": 0.000984063505746558,
+      "weight_decay": 0.0001,
+      "hidden": 512,
+      "dropout": 0.5,
+      "strategy": "last_block",
+      "arch": "resnet50",
+      "epochs": 12,
+      "batch_size": 32
+    }
+  }
+}

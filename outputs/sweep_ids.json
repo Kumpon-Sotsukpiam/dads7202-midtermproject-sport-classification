@@ -1,0 +1,8 @@
+{
+  "vgg16_frozen": "l5l2u9ee",
+  "vgg16_last_block": "ts2gsyb0",
+  "mobilenet_v2_frozen": "nv0xw6xa",
+  "mobilenet_v2_last_block": "hgzxb3k5",
+  "resnet50_frozen": "25htj08f",
+  "resnet50_last_block": "g3buomhx"
+}

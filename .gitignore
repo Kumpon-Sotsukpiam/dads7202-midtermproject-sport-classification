@@ -1,0 +1,9 @@
+# large / private files — do not push
+outputs/ckpt/
+outputs/results.pkl
+sport_dataset/
+sport_clean/
+.env
+wandb/
+.ipynb_checkpoints/
+__pycache__/
