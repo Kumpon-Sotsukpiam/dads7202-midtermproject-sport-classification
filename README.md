@@ -49,20 +49,26 @@
 
 ### 2.1 Data source
 
-✏️ *Describe where the images come from (public dataset / web scraping / own photos), with search keywords, websites or tools, and how irrelevant images were filtered out.*
+All images were collected from the web and pre-filtered with CLIP before entering the notebook:
 
-| Class | Source(s) | # images | Note |
+1. **Collection:** images were downloaded with **[icrawler](https://github.com/hellock/icrawler)** from **Bing** (photo filter on) and **Baidu**, using about 10 keywords per class (up to 100 images per keyword per engine). The keywords mix several angles and contexts (match, action shot, venue) and several languages (English, Thai, Chinese, Japanese, Spanish, Russian, …), so that no single source dominates. Corrupt files, images with a short side < 64 px and pHash duplicates were then removed. A duplicate that appeared in two classes was dropped entirely.
+2. **Relevance filtering:** **[`openai/clip-vit-large-patch14`](https://huggingface.co/openai/clip-vit-large-patch14)** (CLIP ViT-L/14) was used zero-shot as a *flagging* tool. Each image was scored against 3 prompt templates per sport (e.g. "an action shot of {sport}") and 12 "junk" prompts (cartoon, product photo, empty stadium, logo/text, video game, …). An image was flagged as **junk** if p(junk) ≥ 0.60, or as **mismatch** if CLIP predicted another sport with p ≥ 0.80 while the given label had p ≤ 0.10. Flagged images were **checked by eye**, and only those confirmed as wrong were moved out (not deleted). The same prompts and thresholds were used for every image, before splitting.
+3. **Duplicate removal:** **[`openai/clip-vit-base-patch32`](https://huggingface.co/openai/clip-vit-base-patch32)** (CLIP ViT-B/32) image embeddings were compared by cosine similarity. Pairs with similarity > 0.95 were listed as near-duplicates for removal. This catches re-crops and edits that pHash misses.
+
+The notebook then applies its own cleaning (Section 2.3), with MD5 for exact copies and dHash for resized copies across splits.
+
+| Class | Source(s) | # images (after cleaning) | Note |
 |---|---|:-:|---|
-| badminton | ✏️ | | |
-| basketball | ✏️ | | |
-| boxing | ✏️ | | |
-| chess | ✏️ | | |
-| fencing | ✏️ | | |
-| formula1 | ✏️ | | |
-| ice_hockey | ✏️ | | |
-| motogp | ✏️ | | |
-| shooting | ✏️ | | |
-| swimming | ✏️ | | |
+| badminton | Web (icrawler) | 771 | |
+| basketball | Web (icrawler) | 817 | |
+| boxing | Web (icrawler) | 691 | |
+| chess | Web (icrawler) | 904 | |
+| fencing | Web (icrawler) | 870 | |
+| formula1 | Web (icrawler) | 671 | |
+| ice_hockey | Web (icrawler) | 770 | |
+| motogp | Web (icrawler) | 795 | |
+| shooting | Web (icrawler) | 686 | |
+| swimming | Web (icrawler) | 702 | |
 
 ### 2.2 Exploratory data analysis
 
@@ -363,7 +369,7 @@ Grad-CAM is computed on the **best seed of each architecture, chosen by val macr
 
 ## 8. References🌐
 
-**Libraries:** PyTorch, torchvision, scikit-learn, SciPy, pandas, NumPy, Matplotlib, Weights & Biases, pytorch-grad-cam, torchinfo, Pillow
+**Libraries:** PyTorch, torchvision, scikit-learn, SciPy, pandas, NumPy, Matplotlib, Weights & Biases, pytorch-grad-cam, torchinfo, Pillow, icrawler (data collection), CLIP via Hugging Face (data filtering)
 
 **Versions:** ✏️ *paste the version line printed by the first code cell, e.g.* `Python 3.x | PyTorch 2.x | torchvision 0.x`
 
@@ -374,7 +380,9 @@ Grad-CAM is computed on the **best seed of each architecture, chosen by val macr
 5. Shorten, C., & Khoshgoftaar, T. M. (2019). **[A survey on Image Data Augmentation for Deep Learning](https://doi.org/10.1186/s40537-019-0197-0)**. Journal of Big Data, 6(60).
 6. Gildenblat, J., & contributors (2021). **[PyTorch library for CAM methods](https://github.com/jacobgil/pytorch-grad-cam)**. GitHub.
 7. Biewald, L. (2020). **[Experiment Tracking with Weights and Biases](https://www.wandb.com/)**.
-8. ✏️ Assoc. Prof. Thitirat ✏️ (2026). DADS7202 Deep Learning course materials (MLP2, CNN1, CNN2 examples). GSAS, NIDA.
+8. Radford, A., et al. (2021). **[Learning Transferable Visual Models From Natural Language Supervision](https://arxiv.org/abs/2103.00020)** (CLIP). ICML.
+9. Chen, K., & contributors. **[icrawler: A multi-thread crawler framework](https://github.com/hellock/icrawler)**. GitHub.
+10. ✏️ Assoc. Prof. Thitirat ✏️ (2026). DADS7202 Deep Learning course materials (MLP2, CNN1, CNN2 examples). GSAS, NIDA.
 
 ---
 
