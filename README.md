@@ -9,10 +9,10 @@ Sports image classification presents unique computer vision challenges due to ra
 
 ## Key Results
 
-1. **After W&B Sweep tuning + 5 seeds per model**, the best model is **ResNet50** with test Macro-F1 **96.64 +/- 0.19%** and accuracy **96.61 +/- 0.19%** (mean +/- SD)[span_0](start_span)[span_0](end_span).
-2. ResNet50 vs. runner-up MobileNetV2 on Macro-F1: p = 0.0037, significant after Bonferroni (Welch's t-test, Bonferroni alpha = 0.0083)[span_1](start_span)[span_1](end_span).
-3. The lightest model, **MobileNetV2** (2.55M params, 1.78 ms/img), reaches Macro-F1 95.34 +/- 0.54%[span_2](start_span)[span_2](end_span).
-4. **Fine-tuning the last block vs. a frozen backbone** (Macro-F1 difference, 95% CI): VGG16 +0.28 [-0.15, +0.70] pp; MobileNetV2 +1.99 [+1.28, +2.70] pp; ResNet50 +0.39 [+0.14, +0.63] pp[span_3](start_span)[span_3](end_span).
+1. **After W&B Sweep tuning + 5 seeds per model**, the best model is **ResNet50** with test Macro-F1 **96.64 +/- 0.19%** and accuracy **96.61 +/- 0.19%** (mean +/- SD).
+2. ResNet50 vs. runner-up MobileNetV2 on Macro-F1: p = 0.0037, significant after Bonferroni (Welch's t-test, Bonferroni alpha = 0.0083).
+3. The lightest model, **MobileNetV2** (2.55M params, 1.78 ms/img), reaches Macro-F1 95.34 +/- 0.54%.
+4. **Fine-tuning the last block vs. a frozen backbone** (Macro-F1 difference, 95% CI): VGG16 +0.28 [-0.15, +0.70] pp; MobileNetV2 +1.99 [+1.28, +2.70] pp; ResNet50 +0.39 [+0.14, +0.63] pp.
 5. Grad-CAM analysis demonstrates that our models actively focus on semantic sport cues (e.g., athletes, equipment) rather than learning spurious background artifacts.
 
 ## Table of Contents
@@ -46,60 +46,60 @@ Sports image classification presents unique computer vision challenges due to ra
 
 All images were collected from the web and pre-filtered with CLIP before entering the notebook:
 
-1. **Collection:** Images were downloaded with **icrawler** from **Bing** (photo filter on) and **Baidu**, using about 10 keywords per class (up to 100 images per keyword per engine)[span_4](start_span)[span_4](end_span). The keywords mix several angles and contexts (match, action shot, venue) and several languages (English, Thai, Chinese, Japanese, Spanish, Russian), so that no single source dominates[span_5](start_span)[span_5](end_span). Corrupt files, images with a short side < 64 px, and pHash duplicates were then removed[span_6](start_span)[span_6](end_span). A duplicate that appeared in two classes was dropped entirely[span_7](start_span)[span_7](end_span).
-2. **Relevance filtering:** **`openai/clip-vit-large-patch14`** (CLIP ViT-L/14) was used zero-shot as a flagging tool[span_8](start_span)[span_8](end_span). Each image was scored against 3 prompt templates per sport (e.g., "an action shot of {sport}") and 12 "junk" prompts (cartoon, product photo, empty stadium, logo/text, video game)[span_9](start_span)[span_9](end_span). An image was flagged as **junk** if p(junk) >= 0.60, or as **mismatch** if CLIP predicted another sport with p >= 0.80 while the given label had p <= 0.10[span_10](start_span)[span_10](end_span). Flagged images were **checked by eye**, and only those confirmed as wrong were moved out (not deleted)[span_11](start_span)[span_11](end_span). The same prompts and thresholds were used for every image, before splitting[span_12](start_span)[span_12](end_span).
-3. **Duplicate removal:** **`openai/clip-vit-base-patch32`** (CLIP ViT-B/32) image embeddings were compared by cosine similarity[span_13](start_span)[span_13](end_span). Pairs with similarity > 0.95 were listed as near-duplicates for removal[span_14](start_span)[span_14](end_span). This catches re-crops and edits that pHash misses[span_15](start_span)[span_15](end_span).
+1. **Collection:** Images were downloaded with **icrawler** from **Bing** (photo filter on) and **Baidu**, using about 10 keywords per class (up to 100 images per keyword per engine). The keywords mix several angles and contexts (match, action shot, venue) and several languages (English, Thai, Chinese, Japanese, Spanish, Russian), so that no single source dominates. Corrupt files, images with a short side < 64 px, and pHash duplicates were then removed. A duplicate that appeared in two classes was dropped entirely.
+2. **Relevance filtering:** **`openai/clip-vit-large-patch14`** (CLIP ViT-L/14) was used zero-shot as a flagging tool. Each image was scored against 3 prompt templates per sport (e.g., "an action shot of {sport}") and 12 "junk" prompts (cartoon, product photo, empty stadium, logo/text, video game). An image was flagged as **junk** if p(junk) >= 0.60, or as **mismatch** if CLIP predicted another sport with p >= 0.80 while the given label had p <= 0.10. Flagged images were **checked by eye**, and only those confirmed as wrong were moved out (not deleted). The same prompts and thresholds were used for every image, before splitting.
+3. **Duplicate removal:** **`openai/clip-vit-base-patch32`** (CLIP ViT-B/32) image embeddings were compared by cosine similarity. Pairs with similarity > 0.95 were listed as near-duplicates for removal. This catches re-crops and edits that pHash misses.
 
-The notebook then applies its own cleaning (Section 2.3), with MD5 for exact copies and dHash for resized copies across splits[span_16](start_span)[span_16](end_span).
+The notebook then applies its own cleaning (Section 2.3), with MD5 for exact copies and dHash for resized copies across splits.
 
 | Class | Source(s) | # images (after cleaning) | Note |
 |---|---|:-:|---|
-| badminton | Web (icrawler) - Bing/Baidu | 771 | Indoor court action[span_17](start_span)[span_17](end_span) |
-| basketball | Web (icrawler) - Bing/Baidu | 817 | Indoor/outdoor courts[span_18](start_span)[span_18](end_span) |
-| boxing | Web (icrawler) - Bing/Baidu | 691 | High-contrast spotlighting[span_19](start_span)[span_19](end_span) |
-| chess | Web (icrawler) - Bing/Baidu | 904 | Close-up board views[span_20](start_span)[span_20](end_span) |
-| fencing | Web (icrawler) - Bing/Baidu | 870 | Dark piste backgrounds[span_21](start_span)[span_21](end_span) |
-| formula1 | Web (icrawler) - Bing/Baidu | 671 | High-speed circuit racing[span_22](start_span)[span_22](end_span) |
-| ice_hockey | Web (icrawler) - Bing/Baidu | 770 | High-brightness rink surfaces[span_23](start_span)[span_23](end_span) |
-| motogp | Web (icrawler) - Bing/Baidu | 795 | Motorcycles on tracks[span_24](start_span)[span_24](end_span) |
-| shooting | Web (icrawler) - Bing/Baidu | 686 | Stance and aiming profiles[span_25](start_span)[span_25](end_span) |
-| swimming | Web (icrawler) - Bing/Baidu | 702 | Water splashes, pool lanes[span_26](start_span)[span_26](end_span) |
+| badminton | Web (icrawler) - Bing/Baidu | 771 | Indoor court action |
+| basketball | Web (icrawler) - Bing/Baidu | 817 | Indoor/outdoor courts |
+| boxing | Web (icrawler) - Bing/Baidu | 691 | High-contrast spotlighting |
+| chess | Web (icrawler) - Bing/Baidu | 904 | Close-up board views |
+| fencing | Web (icrawler) - Bing/Baidu | 870 | Dark piste backgrounds |
+| formula1 | Web (icrawler) - Bing/Baidu | 671 | High-speed circuit racing |
+| ice_hockey | Web (icrawler) - Bing/Baidu | 770 | High-brightness rink surfaces |
+| motogp | Web (icrawler) - Bing/Baidu | 795 | Motorcycles on tracks |
+| shooting | Web (icrawler) - Bing/Baidu | 686 | Stance and aiming profiles |
+| swimming | Web (icrawler) - Bing/Baidu | 702 | Water splashes, pool lanes |
 
 ### 2.2 Exploratory data analysis
 
 <p align="center"><img src="outputs/figs/1_eda.png" width="850"></p>
 
-After cleaning: **7,677 images**; largest class **chess** (904), smallest **formula1** (671) -> imbalance ratio (max/min) = **1.35**[span_27](start_span)[span_27](end_span).
+After cleaning: **7,677 images**; largest class **chess** (904), smallest **formula1** (671) -> imbalance ratio (max/min) = **1.35**.
 
 To handle class imbalance and prevent the model from biasing toward majority classes *(Cui et al., 2019)*, we:
-1. Use a **stratified split**, so every split keeps the same class proportions[span_28](start_span)[span_28](end_span).
-2. Use **class-weighted cross-entropy**, with weights calculated from the train split only[span_29](start_span)[span_29](end_span).
-3. Report imbalance-robust metrics: **Macro-F1** (primary), balanced accuracy and per-class precision/recall[span_30](start_span)[span_30](end_span).
+1. Use a **stratified split**, so every split keeps the same class proportions.
+2. Use **class-weighted cross-entropy**, with weights calculated from the train split only.
+3. Report imbalance-robust metrics: **Macro-F1** (primary), balanced accuracy and per-class precision/recall.
 
 Additionally, the EDA reveals significant illumination variations (e.g., indoor vs. outdoor sports), justifying the need for photometric augmentation to handle low-light and high-contrast environments *(Guo et al., 2020)*.
 
 ### 2.3 Data cleaning
 
 As demonstrated by *Northcutt et al. (2021)*, pervasive label errors and cross-set leakage destabilize machine learning benchmarks. We implement a systematic dataset curation step:
-1. Remove unreadable or corrupt files[span_31](start_span)[span_31](end_span).
-2. Remove images whose short side is < 64 px[span_32](start_span)[span_32](end_span).
-3. Remove exact duplicates (same MD5)[span_33](start_span)[span_33](end_span). If the same file appears in two classes, every copy is dropped because the labels conflict (resolving dataset-level label noise)[span_34](start_span)[span_34](end_span).
-4. Remove near-duplicates, i.e., resized or re-encoded copies, using a perceptual hash (dHash, Hamming distance <= 4)[span_35](start_span)[span_35](end_span).
-5. Fix the EXIF orientation, convert to RGB, and downscale so the short side is <= 512 px[span_36](start_span)[span_36](end_span).
+1. Remove unreadable or corrupt files.
+2. Remove images whose short side is < 64 px.
+3. Remove exact duplicates (same MD5). If the same file appears in two classes, every copy is dropped because the labels conflict (resolving dataset-level label noise).
+4. Remove near-duplicates, i.e., resized or re-encoded copies, using a perceptual hash (dHash, Hamming distance <= 4).
+5. Fix the EXIF orientation, convert to RGB, and downscale so the short side is <= 512 px.
 
-A **near-duplicate leakage check** then compares the dHash of every image across train/val/test, because MD5 cannot detect a resized copy of the same photo[span_37](start_span)[span_37](end_span):
+A **near-duplicate leakage check** then compares the dHash of every image across train/val/test, because MD5 cannot detect a resized copy of the same photo:
 
-> **4 near-duplicate pair(s) across splits** (1 involving the test set)[span_38](start_span)[span_38](end_span). They were **kept** (`REMOVE_NEAR_DUPLICATES = False`) and are reported as a limitation: all pairs have the same label, and 1 of the 1,152 test images has a near-copy in another split, so the effect on test accuracy is at most 1/1,152 = 0.09 pp[span_39](start_span)[span_39](end_span).
+> **4 near-duplicate pair(s) across splits** (1 involving the test set). They were **kept** (`REMOVE_NEAR_DUPLICATES = False`) and are reported as a limitation: all pairs have the same label, and 1 of the 1,152 test images has a near-copy in another split, so the effect on test accuracy is at most 1/1,152 = 0.09 pp.
 
 <p align="center"><img src="outputs/figs/2_near_duplicates.png" width="500"></p>
 
-This is well below the 1.30 pp gap between ResNet50 and MobileNetV2 (Section 5.4), so the leak cannot change the ranking of the models[span_40](start_span)[span_40](end_span).
+This is well below the 1.30 pp gap between ResNet50 and MobileNetV2 (Section 5.4), so the leak cannot change the ranking of the models.
 
 ### 2.4 Data splitting (train / val / test)
 
-- **Stratified random split 70 / 15 / 15** (`random_state = 42`)[span_41](start_span)[span_41](end_span).
-- The **same split is used for every architecture and seed**, so the run-to-run variation comes only from training randomness[span_42](start_span)[span_42](end_span).
-- The test set is used **only for the final evaluation**[span_43](start_span)[span_43](end_span). Hyperparameters, the best epoch and the strategy are all chosen on validation[span_44](start_span)[span_44](end_span).
+- **Stratified random split 70 / 15 / 15** (`random_state = 42`).
+- The **same split is used for every architecture and seed**, so the run-to-run variation comes only from training randomness.
+- The test set is used **only for the final evaluation**. Hyperparameters, the best epoch and the strategy are all chosen on validation.
 
 | Class | train | val | test | total |
 |---|:-:|:-:|:-:|:-:|
@@ -123,7 +123,7 @@ This is well below the 1.30 pp gap between ResNet50 and MobileNetV2 (Section 5.4
 | Photometric | `ColorJitter(brightness 0.3, contrast 0.3, saturation 0.2, hue 0.02)` | -- |
 | Normalization | ImageNet mean / std | same |
 
-Sport photos vary in camera angle, zoom and lighting, so we use scale crops, horizontal flips, small rotations and colour jitter[span_45](start_span)[span_45](end_span). Vertical flips and large rotations are not used because they produce unnatural images[span_46](start_span)[span_46](end_span).
+Sport photos vary in camera angle, zoom and lighting, so we use scale crops, horizontal flips, small rotations and colour jitter. Vertical flips and large rotations are not used because they produce unnatural images.
 
 <p align="center"><img src="outputs/figs/2_augmentation.png" width="800"></p>
 
@@ -137,13 +137,13 @@ We selected three distinct CNN families to evaluate trade-offs between represent
 
 | Backbone | Year | Params | Key idea | Why chosen |
 |---|:-:|:-:|---|---|
-| **VGG16** *(Simonyan & Zisserman, 2015)* | 2014 | ~138M (original) | Plain stack of 3x3 convs (13 conv layers) | Classic baseline; provides straightforward spatial feature maps for Grad-CAM[span_47](start_span)[span_47](end_span). |
-| **ResNet50** *(He et al., 2016)* | 2015 | ~25.6M | Residual (skip) connections + bottleneck blocks | Deep yet easy to train; a benchmark standard for high-accuracy visual recognition[span_48](start_span)[span_48](end_span). |
-| **MobileNetV2** *(Sandler et al., 2018)* | 2018 | ~3.5M | Depthwise-separable convs + inverted residuals | Light and fast; suitable for latency-sensitive or resource-constrained devices[span_49](start_span)[span_49](end_span). |
+| **VGG16** *(Simonyan & Zisserman, 2015)* | 2014 | ~138M (original) | Plain stack of 3x3 convs (13 conv layers) | Classic baseline; provides straightforward spatial feature maps for Grad-CAM. |
+| **ResNet50** *(He et al., 2016)* | 2015 | ~25.6M | Residual (skip) connections + bottleneck blocks | Deep yet easy to train; a benchmark standard for high-accuracy visual recognition. |
+| **MobileNetV2** *(Sandler et al., 2018)* | 2018 | ~3.5M | Depthwise-separable convs + inverted residuals | Light and fast; suitable for latency-sensitive or resource-constrained devices. |
 
 ### 3.2 Pre-trained models without fine-tuning
 
-Before any training, the original ImageNet-1K models predict standard ImageNet classes (e.g., `racket`, `puck`, `scuba_diver`), and none of their outputs corresponds directly to our 10 sport classes[span_50](start_span)[span_50](end_span). The classifier therefore must be replaced and fine-tuned on domain-specific data.
+Before any training, the original ImageNet-1K models predict standard ImageNet classes (e.g., `racket`, `puck`, `scuba_diver`), and none of their outputs corresponds directly to our 10 sport classes. The classifier therefore must be replaced and fine-tuned on domain-specific data.
 
 <p align="center"><img src="outputs/figs/3_pretrained_resnet50.png" width="800"></p>
 
@@ -151,7 +151,7 @@ The figure above demonstrates that the native, un-tuned ResNet50 model completel
 
 ### 3.3 Modified architecture (backbone cut + new head)
 
-Following transfer learning principles *(Yosinski et al., 2014)*, the convolutional feature extractor of each backbone is retained while its original 1,000-class output layer is replaced by a unified 2-layer MLP classification head[span_51](start_span)[span_51](end_span).
+Following transfer learning principles *(Yosinski et al., 2014)*, the convolutional feature extractor of each backbone is retained while its original 1,000-class output layer is replaced by a unified 2-layer MLP classification head.
 
 | Backbone | Kept (ImageNet weights) | Removed | New head | Unfrozen in `last_block` |
 |---|---|---|---|---|
@@ -159,7 +159,7 @@ Following transfer learning principles *(Yosinski et al., 2014)*, the convolutio
 | ResNet50 | conv1 ... layer4 + avgpool -> 2,048-d | `fc` (2048->1000) | `Linear(2048, H) -> ReLU -> Dropout(p) -> Linear(H, 10)` | `layer4` |
 | MobileNetV2 | `features` + global avgpool -> 1,280-d | `classifier` (1280->1000) | `Linear(1280, H) -> ReLU -> Dropout(p) -> Linear(H, 10)` | `features[14:]` |
 
-The **same head structure** is used for all 3 backbones, so only the representation of the backbones differs[span_52](start_span)[span_52](end_span). `H` and `p` are hyperparameters tuned by the sweep[span_53](start_span)[span_53](end_span). BatchNorm layers in the frozen part stay in `eval()` mode, ensuring the ImageNet running statistics are not corrupted during training[span_54](start_span)[span_54](end_span).
+The **same head structure** is used for all 3 backbones, so only the representation of the backbones differs. `H` and `p` are hyperparameters tuned by the sweep. BatchNorm layers in the frozen part stay in `eval()` mode, ensuring the ImageNet running statistics are not corrupted during training.
 
 <p align="center"><img src="outputs/figs/3_network_diagram.png" width="900"></p>
 
@@ -171,23 +171,23 @@ The **same head structure** is used for all 3 backbones, so only the representat
 
 | Item | Setting |
 |---|---|
-| Loss | Class-weighted cross-entropy (weights derived from the train split to counteract imbalance)[span_55](start_span)[span_55](end_span) |
-| Optimizer | AdamW: head LR = `lr`, LR of the unfrozen backbone block = `lr x 0.1`[span_56](start_span)[span_56](end_span) |
-| LR scheduler | CosineAnnealingLR (T_max = epochs)[span_57](start_span)[span_57](end_span) |
-| Epochs / batch size | 12 / 32 (fixed)[span_58](start_span)[span_58](end_span) |
-| Model selection | Checkpoint of the epoch with the highest **val macro-F1**[span_59](start_span)[span_59](end_span) |
-| Hardware | Mac mini (Apple M4: 10-core CPU, 10-core GPU, 16 GB), PyTorch MPS backend[span_60](start_span)[span_60](end_span). About 20.0 h of training in total: 13.3 h for the 60 sweep runs and 6.7 h for the 30 final runs[span_61](start_span)[span_61](end_span). |
+| Loss | Class-weighted cross-entropy (weights derived from the train split to counteract imbalance) |
+| Optimizer | AdamW: head LR = `lr`, LR of the unfrozen backbone block = `lr x 0.1` |
+| LR scheduler | CosineAnnealingLR (T_max = epochs) |
+| Epochs / batch size | 12 / 32 (fixed) |
+| Model selection | Checkpoint of the epoch with the highest **val macro-F1** |
+| Hardware | Mac mini (Apple M4: 10-core CPU, 10-core GPU, 16 GB), PyTorch MPS backend. About 20.0 h of training in total: 13.3 h for the 60 sweep runs and 6.7 h for the 30 final runs. |
 
 ### 4.2 Hyperparameter tuning: W&B Sweep (Bayesian)
 
-To compare `frozen` and `last_block` strategies fairly, **one sweep is run per architecture per strategy** (6 sweeps) with the same budget of **10 runs each**, rather than letting a single sweep choose the strategy[span_62](start_span)[span_62](end_span). The objective metric is to maximize the best validation macro-F1 (using a single fixed seed = 42)[span_63](start_span)[span_63](end_span).
+To compare `frozen` and `last_block` strategies fairly, **one sweep is run per architecture per strategy** (6 sweeps) with the same budget of **10 runs each**, rather than letting a single sweep choose the strategy. The objective metric is to maximize the best validation macro-F1 (using a single fixed seed = 42).
 
 | Parameter | Search space |
 |---|---|
-| `lr` | log-uniform [1e-4, 2e-3][span_64](start_span)[span_64](end_span) |
-| `weight_decay` | {1e-4, 1e-2}[span_65](start_span)[span_65](end_span) |
-| `hidden` (H) | {256, 512}[span_66](start_span)[span_66](end_span) |
-| `dropout` (p) | {0.3, 0.5}[span_67](start_span)[span_67](end_span) |
+| `lr` | log-uniform [1e-4, 2e-3] |
+| `weight_decay` | {1e-4, 1e-2} |
+| `hidden` (H) | {256, 512} |
+| `dropout` (p) | {0.3, 0.5} |
 
 **Best configuration per architecture x strategy** (from the sweeps):
 
@@ -200,7 +200,7 @@ To compare `frozen` and `last_block` strategies fairly, **one sweep is run per a
 | ResNet50 | `frozen` | 1.05e-03 | 0.01 | 512 | 0.3 |
 | ResNet50 | `last_block` (Selected) | 9.84e-04 | 0.0001 | 512 | 0.5 |
 
-> (Selected) indicates the strategy chosen as the main model due to a higher mean validation macro-F1 over the 5 seeds[span_68](start_span)[span_68](end_span).
+> (Selected) indicates the strategy chosen as the main model due to a higher mean validation macro-F1 over the 5 seeds.
 
 **Sweep results** (6 sweeps x 10 runs = 60 runs; best val macro-F1 in %, single seed 42):
 
@@ -214,18 +214,18 @@ To compare `frozen` and `last_block` strategies fairly, **one sweep is run per a
 | ResNet50 | `last_block` | 10 | **98.13** | 97.83 | 96.94 | 15.6 |
 
 **What the sweeps show:**
-- **The learning rate matters most.** For MobileNetV2 and ResNet50, val macro-F1 rises with lr (Pearson r between log lr and val F1 = 0.82-0.95 across the 4 sweeps), and the best runs sit near the top of the range[span_69](start_span)[span_69](end_span). For VGG16 there is no clear trend (r = -0.27 and 0.02)[span_70](start_span)[span_70](end_span).
-- `hidden = 512` gives a higher mean val F1 than 256 in 5 of the 6 sweeps[span_71](start_span)[span_71](end_span). The effects of `weight_decay` and `dropout` are small (mostly < 0.5 pp) and change direction between sweeps[span_72](start_span)[span_72](end_span).
-- The Bayesian search samples unevenly, with some values tried only 1-2 times, so these trends are indicative only[span_73](start_span)[span_73](end_span).
+- **The learning rate matters most.** For MobileNetV2 and ResNet50, val macro-F1 rises with lr (Pearson r between log lr and val F1 = 0.82-0.95 across the 4 sweeps), and the best runs sit near the top of the range. For VGG16 there is no clear trend (r = -0.27 and 0.02).
+- `hidden = 512` gives a higher mean val F1 than 256 in 5 of the 6 sweeps. The effects of `weight_decay` and `dropout` are small (mostly < 0.5 pp) and change direction between sweeps.
+- The Bayesian search samples unevenly, with some values tried only 1-2 times, so these trends are indicative only.
 
 ### 4.3 Final runs and strategy selection
 
 To account for stochastic optimization variance and initialization noise *(Bouthillier et al., 2021)*:
-1. The best configuration of **both strategies** is re-trained from scratch with **5 seeds** (`0-4`)[span_74](start_span)[span_74](end_span).
-2. For each architecture, the strategy with the higher **mean val macro-F1** becomes the main model[span_75](start_span)[span_75](end_span). The choice is made on validation only, never on test[span_76](start_span)[span_76](end_span).
-3. Results are reported on the test set as mean +/- SD over the 5 seeds[span_77](start_span)[span_77](end_span).
+1. The best configuration of **both strategies** is re-trained from scratch with **5 seeds** (`0-4`).
+2. For each architecture, the strategy with the higher **mean val macro-F1** becomes the main model. The choice is made on validation only, never on test.
+3. Results are reported on the test set as mean +/- SD over the 5 seeds.
 
-**Final runs:** 3 models x 2 strategies x 5 seeds = 30 runs, all finished[span_78](start_span)[span_78](end_span). Values are mean +/- SD over seeds 0-4[span_79](start_span)[span_79](end_span). (Selected) marks the strategy with the higher mean **val** macro-F1, which becomes the main model[span_80](start_span)[span_80](end_span).
+**Final runs:** 3 models x 2 strategies x 5 seeds = 30 runs, all finished. Values are mean +/- SD over seeds 0-4. (Selected) marks the strategy with the higher mean **val** macro-F1, which becomes the main model.
 
 | Model | Strategy | Runs | Val macro-F1 (%) | Test macro-F1 (%) | Test accuracy (%) | Avg. time / run (min) |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -236,8 +236,8 @@ To account for stochastic optimization variance and initialization noise *(Bouth
 | ResNet50 | `frozen` | 5 | 97.56 +/- 0.14 | 96.25 +/- 0.15 | 96.20 +/- 0.16 | 13.1 |
 | ResNet50 | `last_block` (Selected) | 5 | 97.81 +/- 0.30 | 96.64 +/- 0.19 | 96.61 +/- 0.19 | 15.8 |
 
-- `last_block` wins on validation for all 3 models, and the test set agrees in every case[span_81](start_span)[span_81](end_span).
-- Test macro-F1 is **below val** for every configuration: about 1.2-1.4 pp for most, and 0.3 pp for VGG16 `frozen`[span_82](start_span)[span_82](end_span). Val was used to pick the hyperparameters, the best epoch and the strategy, so it is optimistically biased, which is why only test scores are reported as results[span_83](start_span)[span_83](end_span). The ranking of the models is the same on val and test[span_84](start_span)[span_84](end_span).
+- `last_block` wins on validation for all 3 models, and the test set agrees in every case.
+- Test macro-F1 is **below val** for every configuration: about 1.2-1.4 pp for most, and 0.3 pp for VGG16 `frozen`. Val was used to pick the hyperparameters, the best epoch and the strategy, so it is optimistically biased, which is why only test scores are reported as results. The ranking of the models is the same on val and test.
 
 ---
 
@@ -251,13 +251,13 @@ To account for stochastic optimization variance and initialization noise *(Bouth
 | **MobileNetV2** | last_block | 95.31 +/- 0.53 | 95.35 +/- 0.52 | 95.34 +/- 0.54 | 95.34 +/- 0.52 | 99.10 +/- 0.17 | 2.55 | 2.01 | 1.78 |
 | **VGG16** | last_block | 92.80 +/- 0.14 | 92.70 +/- 0.18 | 92.76 +/- 0.15 | 92.82 +/- 0.12 | 98.56 +/- 0.21 | 27.57 | 19.93 | 8.75 |
 
-> Ranked by mean test Macro-F1 (primary metric)[span_85](start_span)[span_85](end_span). SD = sample SD (ddof = 1)[span_86](start_span)[span_86](end_span). Latency = forward-pass time per image at batch size 32 (throughput, not single-image latency), measured on the training machine (Apple Silicon, MPS)[span_87](start_span)[span_87](end_span).
+> Ranked by mean test Macro-F1 (primary metric). SD = sample SD (ddof = 1). Latency = forward-pass time per image at batch size 32 (throughput, not single-image latency), measured on the training machine (Apple Silicon, MPS).
 
 ### 5.2 Training curves
 
 <p align="center"><img src="outputs/figs/6_training_curves.png" width="900"></p>
 
-> Train metrics are measured with augmentation and dropout on[span_88](start_span)[span_88](end_span). At the final epoch, train accuracy exceeds validation accuracy by +5.1 pp (VGG16), +2.2 pp (MobileNetV2) and +2.1 pp (ResNet50)[span_89](start_span)[span_89](end_span). VGG16 overfits the most, likely because its new head takes the 25,088-d flattened feature map (~12.8M params in the first Linear layer)[span_90](start_span)[span_90](end_span).
+> Train metrics are measured with augmentation and dropout on. At the final epoch, train accuracy exceeds validation accuracy by +5.1 pp (VGG16), +2.2 pp (MobileNetV2) and +2.1 pp (ResNet50). VGG16 overfits the most, likely because its new head takes the 25,088-d flattened feature map (~12.8M params in the first Linear layer).
 
 ### 5.3 Per-class performance & confusion matrices
 
@@ -279,13 +279,13 @@ To account for stochastic optimization variance and initialization noise *(Bouth
 | shooting | 91.92 +/- 0.98 | 95.21 +/- 0.43 | 97.10 +/- 0.36 |
 | swimming | 96.71 +/- 0.54 | 97.60 +/- 0.34 | 98.68 +/- 0.61 |
 
-- Weakest class for VGG16: **basketball** (86.86 +/- 1.26%)[span_91](start_span)[span_91](end_span)
-- Weakest class for MobileNetV2: **badminton** (91.20 +/- 0.93%)[span_92](start_span)[span_92](end_span)
-- Weakest class for ResNet50: **basketball** (92.25 +/- 1.15%)[span_93](start_span)[span_93](end_span)
+- Weakest class for VGG16: **basketball** (86.86 +/- 1.26%)
+- Weakest class for MobileNetV2: **badminton** (91.20 +/- 0.93%)
+- Weakest class for ResNet50: **basketball** (92.25 +/- 1.15%)
 
 ### 5.4 Statistical significance between architectures
 
-To evaluate whether performance differences are statistically significant *(Bouthillier et al., 2021)*, we apply Welch's t-test (two-sided) on test accuracy and Macro-F1 over the 5 seeds[span_94](start_span)[span_94](end_span). A Bonferroni correction for 3 pairs x 2 metrics = 6 tests gives a threshold of **alpha = 0.05 / 6 = 0.0083**[span_95](start_span)[span_95](end_span).
+To evaluate whether performance differences are statistically significant *(Bouthillier et al., 2021)*, we apply Welch's t-test (two-sided) on test accuracy and Macro-F1 over the 5 seeds. A Bonferroni correction for 3 pairs x 2 metrics = 6 tests gives a threshold of **alpha = 0.05 / 6 = 0.0083**.
 
 | metric | pair | diff (pp) | p-value | significant (Bonferroni) |
 |---|:-:|:-:|:-:|:-:|
@@ -298,7 +298,7 @@ To evaluate whether performance differences are statistically significant *(Bout
 
 ### 5.5 Ablation: frozen backbone vs. fine-tuning the last block
 
-The mean difference is `last_block - frozen` on the test set, with a Welch 95% CI, a Bonferroni-adjusted p-value (x 3 architectures) and Cohen's d[span_96](start_span)[span_96](end_span).
+The mean difference is `last_block - frozen` on the test set, with a Welch 95% CI, a Bonferroni-adjusted p-value (x 3 architectures) and Cohen's d.
 
 | metric | model | frozen (mean +/- SD) [95% CI] % | last_block (mean +/- SD) [95% CI] % | diff LB-FZ (pp) [95% CI] | p (Welch) |
 |---|:-:|:-:|:-:|:-:|:-:|
@@ -310,7 +310,7 @@ The mean difference is `last_block - frozen` on the test set, with a Welch 95% C
 
 ### 5.6 Grad-CAM analysis
 
-Grad-CAM *(Selvaraju et al., 2017)* is computed on the **best seed of each architecture, chosen by val macro-F1**, with target = the predicted class[span_97](start_span)[span_97](end_span). The top rows show images all models classify correctly[span_98](start_span)[span_98](end_span). The bottom rows show images at least one model gets wrong[span_99](start_span)[span_99](end_span).
+Grad-CAM *(Selvaraju et al., 2017)* is computed on the **best seed of each architecture, chosen by val macro-F1**, with target = the predicted class. The top rows show images all models classify correctly. The bottom rows show images at least one model gets wrong.
 
 <p align="center"><img src="outputs/figs/7_gradcam.png" width="900"></p>
 
@@ -333,25 +333,25 @@ ResNet50's weakest class is basketball (92.25%), which is often confused with ot
 
 ## 6. Discussion
 
-- **Which architecture works best:** ResNet50 > MobileNetV2 > VGG16 on test Macro-F1 (96.64 / 95.34 / 92.76%), and all three pairwise gaps are significant after Bonferroni (5.4)[span_100](start_span)[span_100](end_span). The residual design lets ResNet50 learn deep features that transfer well[span_101](start_span)[span_101](end_span). VGG16's plain stack ends in a 25,088-d flattened map, which makes the head large and prone to overfitting (train-val gap +5.1 pp vs. ~+2 pp for the others)[span_102](start_span)[span_102](end_span).
-- **Fine-tuning does not help equally:** unfreezing the last block helps MobileNetV2 the most (+1.99 pp, d = 4.1), helps ResNet50 a little (+0.39 pp) and gives no significant gain for VGG16 (+0.28 pp, p_adj = 0.47)[span_103](start_span)[span_103](end_span). MobileNetV2's last block includes the final 1x1 conv that produces the 1,280-d features, so unfreezing it adapts the feature space directly[span_104](start_span)[span_104](end_span). ResNet50's frozen features are already strong (96.25%), which leaves less room to improve[span_105](start_span)[span_105](end_span).
-- **Accuracy vs. size vs. speed:** MobileNetV2 has about 10x fewer parameters (2.55M vs. 24.56M) and is about 3.3x faster (1.78 vs. 5.84 ms/img), for 1.30 pp lower Macro-F1[span_106](start_span)[span_106](end_span). That makes it the better fit for a mobile or on-device app, while ResNet50 suits a server where accuracy matters most[span_107](start_span)[span_107](end_span). VGG16 is the largest and slowest model and also the least accurate, so it has no use case here[span_108](start_span)[span_108](end_span).
-- **Possible under-training:** the best validation epoch often falls at the end of the 12-epoch budget, for MobileNetV2 `last_block` (best epochs 12, 7, 11, 7, 12) and especially VGG16 `frozen` (12, 12, 12, 11, 10)[span_109](start_span)[span_109](end_span). Validation F1 was likely still improving, so a longer schedule (e.g. 20-30 epochs) could raise these scores[span_110](start_span)[span_110](end_span). The VGG16 `frozen` result may therefore be underestimated, which could partly explain why its ablation gap is not significant[span_111](start_span)[span_111](end_span).
-- **Fair comparison by design:** each strategy got its own sweep with the same budget, and the main model's strategy was selected on validation only[span_112](start_span)[span_112](end_span). The test set never influenced any choice[span_113](start_span)[span_113](end_span).
+- **Which architecture works best:** ResNet50 > MobileNetV2 > VGG16 on test Macro-F1 (96.64 / 95.34 / 92.76%), and all three pairwise gaps are significant after Bonferroni (5.4). The residual design lets ResNet50 learn deep features that transfer well. VGG16's plain stack ends in a 25,088-d flattened map, which makes the head large and prone to overfitting (train-val gap +5.1 pp vs. ~+2 pp for the others).
+- **Fine-tuning does not help equally:** unfreezing the last block helps MobileNetV2 the most (+1.99 pp, d = 4.1), helps ResNet50 a little (+0.39 pp) and gives no significant gain for VGG16 (+0.28 pp, p_adj = 0.47). MobileNetV2's last block includes the final 1x1 conv that produces the 1,280-d features, so unfreezing it adapts the feature space directly. ResNet50's frozen features are already strong (96.25%), which leaves less room to improve.
+- **Accuracy vs. size vs. speed:** MobileNetV2 has about 10x fewer parameters (2.55M vs. 24.56M) and is about 3.3x faster (1.78 vs. 5.84 ms/img), for 1.30 pp lower Macro-F1. That makes it the better fit for a mobile or on-device app, while ResNet50 suits a server where accuracy matters most. VGG16 is the largest and slowest model and also the least accurate, so it has no use case here.
+- **Possible under-training:** the best validation epoch often falls at the end of the 12-epoch budget, for MobileNetV2 `last_block` (best epochs 12, 7, 11, 7, 12) and especially VGG16 `frozen` (12, 12, 12, 11, 10). Validation F1 was likely still improving, so a longer schedule (e.g. 20-30 epochs) could raise these scores. The VGG16 `frozen` result may therefore be underestimated, which could partly explain why its ablation gap is not significant.
+- **Fair comparison by design:** each strategy got its own sweep with the same budget, and the main model's strategy was selected on validation only. The test set never influenced any choice.
 - **Limitations:**
-  - With n = 5 seeds, statistical power is low[span_114](start_span)[span_114](end_span).
-  - The p-values and CIs reflect only training randomness (initialization, batch order, augmentation), not variation from sampling the data, because the split is fixed and each sweep used a single seed[span_115](start_span)[span_115](end_span).
-  - 10 sweep runs per architecture x strategy may not find the optimum[span_116](start_span)[span_116](end_span).
-  - Several selected learning rates lie near the edge of the search range [1e-4, 2e-3]: VGG16 `frozen` 1.28e-4 sits near the lower bound, while VGG16 `last_block` 1.50e-3, MobileNetV2 `last_block` 1.70e-3 and MobileNetV2 `frozen` 1.52e-3 sit near the upper bound[span_117](start_span)[span_117](end_span). The optimum may lie outside the range, so a wider search (e.g. [3e-5, 1e-2]) is left for future work[span_118](start_span)[span_118](end_span). The unfrozen block is trained at only `lr x 0.1` (<= 2e-4), which may also limit how much fine-tuning can adapt the backbone[span_119](start_span)[span_119](end_span).
+  - With n = 5 seeds, statistical power is low.
+  - The p-values and CIs reflect only training randomness (initialization, batch order, augmentation), not variation from sampling the data, because the split is fixed and each sweep used a single seed.
+  - 10 sweep runs per architecture x strategy may not find the optimum.
+  - Several selected learning rates lie near the edge of the search range [1e-4, 2e-3]: VGG16 `frozen` 1.28e-4 sits near the lower bound, while VGG16 `last_block` 1.50e-3, MobileNetV2 `last_block` 1.70e-3 and MobileNetV2 `frozen` 1.52e-3 sit near the upper bound. The optimum may lie outside the range, so a wider search (e.g. [3e-5, 1e-2]) is left for future work. The unfrozen block is trained at only `lr x 0.1` (<= 2e-4), which may also limit how much fine-tuning can adapt the backbone.
 
 ---
 
 ## 7. Conclusion
 
-- We compared 3 pre-trained CNNs (VGG16, ResNet50, MobileNetV2) on a 10-class sport dataset, each tuned with its own W&B Sweep per strategy[span_120](start_span)[span_120](end_span).
-- Ranking by mean test Macro-F1: ResNet50 (96.64 +/- 0.19%) > MobileNetV2 (95.34 +/- 0.54%) > VGG16 (92.76 +/- 0.15%)[span_121](start_span)[span_121](end_span).
-- Best model: **ResNet50** (last_block); ResNet50 vs. MobileNetV2: p = 0.0037, significant after Bonferroni[span_122](start_span)[span_122](end_span).
-- Strategy chosen on validation per model: ResNet50 -> `last_block`, MobileNetV2 -> `last_block`, VGG16 -> `last_block`[span_123](start_span)[span_123](end_span).
+- We compared 3 pre-trained CNNs (VGG16, ResNet50, MobileNetV2) on a 10-class sport dataset, each tuned with its own W&B Sweep per strategy.
+- Ranking by mean test Macro-F1: ResNet50 (96.64 +/- 0.19%) > MobileNetV2 (95.34 +/- 0.54%) > VGG16 (92.76 +/- 0.15%).
+- Best model: **ResNet50** (last_block); ResNet50 vs. MobileNetV2: p = 0.0037, significant after Bonferroni.
+- Strategy chosen on validation per model: ResNet50 -> `last_block`, MobileNetV2 -> `last_block`, VGG16 -> `last_block`.
 - Grad-CAM shows that feature extraction appropriately targets primary subjects rather than background artifacts.
 - Error analysis shows that the most frequent errors occur between classes that share substantial environmental backgrounds (e.g., indoor courts).
 
@@ -363,18 +363,18 @@ ResNet50's weakest class is basketball (92.25%), which is often confused with ot
 
 ## 8. References
 
-**Libraries:** PyTorch, torchvision, scikit-learn, SciPy, pandas, NumPy, Matplotlib, Weights & Biases, pytorch-grad-cam, torchinfo, Pillow, icrawler (data collection), CLIP via Hugging Face (data filtering)[span_124](start_span)[span_124](end_span)
+**Libraries:** PyTorch, torchvision, scikit-learn, SciPy, pandas, NumPy, Matplotlib, Weights & Biases, pytorch-grad-cam, torchinfo, Pillow, icrawler (data collection), CLIP via Hugging Face (data filtering)
 
-**Versions:** Python 3.10.21 | PyTorch 2.5.1 | torchvision 0.20.1[span_125](start_span)[span_125](end_span)
+**Versions:** Python 3.10.21 | PyTorch 2.5.1 | torchvision 0.20.1
 
 1. Bouthillier, X., et al. (2021). **[Accounting for variance in machine learning benchmarks](https://proceedings.mlsys.org/paper_files/paper/2021/hash/0184b0cd3cfb185989f858a1d9f5c1eb-Abstract.html)**. Proceedings of Machine Learning and Systems (MLSys), 3, 747-769.
 2. Cui, Y., Jia, M., Lin, T.-Y., Song, Y., & Belongie, S. (2019). **[Class-balanced loss based on effective number of samples](https://arxiv.org/abs/1901.05555)**. CVPR.
 3. Guo, C., Li, C., Guo, J., Loy, C. C., Hou, J., Kwong, S., & Cong, R. (2020). **[Zero-reference deep curve estimation for low-light image enhancement](https://arxiv.org/abs/2001.06826)**. CVPR.
-4. He, K., Zhang, X., Ren, S., & Sun, J. (2016). **[Deep Residual Learning for Image Recognition](https://arxiv.org/abs/1512.03385)**. CVPR[span_126](start_span)[span_126](end_span).
+4. He, K., Zhang, X., Ren, S., & Sun, J. (2016). **[Deep Residual Learning for Image Recognition](https://arxiv.org/abs/1512.03385)**. CVPR.
 5. Northcutt, C. G., Athalye, A., & Mueller, J. (2021). **[Pervasive label errors in test sets destabilize machine learning benchmarks](https://arxiv.org/abs/2103.14749)**. NeurIPS.
 6. Podgorelec, V., Pecnik, S., & Vrbancic, G. (2020). **[Classification of similar sports images using convolutional neural network with hyper-parameter optimization](https://doi.org/10.3390/app10238494)**. Applied Sciences.
-7. Sandler, M., Howard, A., Zhu, M., Zhmoginov, A., & Chen, L.-C. (2018). **[MobileNetV2: Inverted Residuals and Linear Bottlenecks](https://arxiv.org/abs/1801.04381)**. CVPR[span_127](start_span)[span_127](end_span).
-8. Selvaraju, R. R., et al. (2017). **[Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization](https://arxiv.org/abs/1610.02391)**. ICCV[span_128](start_span)[span_128](end_span).
-9. Simonyan, K., & Zisserman, A. (2015). **[Very Deep Convolutional Networks for Large-Scale Image Recognition](https://arxiv.org/abs/1409.1556)**. ICLR[span_129](start_span)[span_129](end_span).
+7. Sandler, M., Howard, A., Zhu, M., Zhmoginov, A., & Chen, L.-C. (2018). **[MobileNetV2: Inverted Residuals and Linear Bottlenecks](https://arxiv.org/abs/1801.04381)**. CVPR.
+8. Selvaraju, R. R., et al. (2017). **[Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization](https://arxiv.org/abs/1610.02391)**. ICCV.
+9. Simonyan, K., & Zisserman, A. (2015). **[Very Deep Convolutional Networks for Large-Scale Image Recognition](https://arxiv.org/abs/1409.1556)**. ICLR.
 10. Yosinski, J., Clune, J., Bengio, Y., & Lipson, H. (2014). **[How transferable are features in deep neural networks?](https://arxiv.org/abs/1411.1792)**. NeurIPS.
 
