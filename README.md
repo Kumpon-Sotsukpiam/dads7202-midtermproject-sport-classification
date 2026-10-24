@@ -14,6 +14,7 @@ Sports image classification presents unique computer vision challenges due to ra
 3. The lightest model, **MobileNetV2** (2.55M params, 1.78 ms/img), reaches Macro-F1 95.34 +/- 0.54%.
 4. **Fine-tuning the last block vs. a frozen backbone** (Macro-F1 difference, 95% CI): VGG16 +0.28 [-0.15, +0.70] pp; MobileNetV2 +1.99 [+1.28, +2.70] pp; ResNet50 +0.39 [+0.14, +0.63] pp.
 5. Grad-CAM analysis demonstrates that our models actively focus on semantic sport cues (e.g., athletes, equipment) rather than learning spurious background artifacts.
+6. Weight and Bias results: https://forge.coreweave.com/wandb/tetravaal/DADS7202_HW_SportCNN_5/reports/Untitled-Report--VmlldzoxODE3MzI1NQ?accessToken=zhdjn8pd5k8o5hi4uhlqid70uk5bcyf04ripn4h12vtwtu5fawu8yvc2yi9l5ou9
 
 ## Table of Contents
 
